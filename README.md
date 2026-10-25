@@ -1,114 +1,171 @@
 # Medical Appointment Data Cleaning Pipeline
 
-## Overview
+## Project Overview
 
-This project focuses on cleaning and investigating a medical appointment dataset using **PySpark** in Databricks.
+This project focuses on cleaning and validating a medical appointment dataset using **PySpark in Databricks**.
 
-The goal is to explore real-world data quality issues, apply data cleaning techniques, standardize columns and data types, and prepare a cleaner dataset for further analysis.
+The dataset contains information about medical appointments, including patient demographics, appointment dates, health indicators, scholarship status, SMS notifications, and whether a patient attended their appointment.
 
-The project uses the Medical Appointment No-Show dataset, which contains information about patients, scheduled appointments, medical conditions, and whether patients attended their appointments.
-
-## Objectives
-
-- Load a CSV dataset into a PySpark DataFrame.
-- Explore inferred and custom schemas.
-- Standardize column names.
-- Investigate missing and invalid values.
-- Create derived columns for appointment status and age groups.
-- Cast columns to appropriate data types.
-- Investigate duplicate records and appointment IDs.
-- Check binary indicator columns for unexpected values.
-- Produce a cleaned DataFrame for downstream analysis.
+The goal is to investigate data quality issues, standardize the dataset, and prepare it for reliable downstream analysis.
 
 ## Dataset
 
-**Dataset:** Medical Appointment No-Show  
-**File:** `KaggleV2-May-2016.csv`
+- **Dataset:** Medical Appointment No-Show
+- **Source:** [Kaggle – Medical Appointment No Shows](https://www.kaggle.com/datasets/joniarroba/noshowappointments)
+- **File:** `KaggleV2-May-2016.csv`
 
-The dataset contains appointment information, including:
+The dataset includes fields such as:
 
-| Column | Description |
-|---|---|
-| PatientId | Unique identifier associated with a patient |
-| AppointmentID | Appointment identifier |
-| Gender | Patient's gender |
-| ScheduledDay | Date and time the appointment was scheduled |
-| AppointmentDay | Date and time of the appointment |
-| Age | Patient's age |
-| Neighbourhood | Location of the medical facility |
-| Scholarship | Indicates participation in the Bolsa Família program |
-| Hipertension | Indicates whether the patient has hypertension |
-| Diabetes | Indicates whether the patient has diabetes |
-| Alcoholism | Indicates whether the patient has alcoholism |
-| Handcap | Indicates disability status |
-| SMS_received | Indicates whether an SMS reminder was received |
-| No-show | Indicates whether the patient missed the appointment |
-
-The dataset can be obtained from [Kaggle – Medical Appointment No Shows](https://www.kaggle.com/datasets/joniarroba/noshowappointments).
+- Patient ID
+- Appointment ID
+- Gender
+- Scheduled Day
+- Appointment Day
+- Age
+- Neighbourhood
+- Scholarship
+- Hypertension
+- Diabetes
+- Alcoholism
+- Handicap
+- SMS Received
+- No-show status
 
 ## Tools and Technologies
 
-- **Python**
-- **Apache Spark / PySpark**
-- **Databricks**
-- **PySpark DataFrames**
-- **Git and GitHub**
+- Python
+- Apache Spark
+- PySpark
+- Databricks
+- CSV
+- Git and GitHub
 
 ## Project Workflow
 
-### 1. Data Ingestion and Schema Exploration
+### 1. Data Ingestion and Schema Definition
 
-- Loaded the CSV file into a PySpark DataFrame.
-- Inspected the inferred schema.
-- Defined a custom schema using `StructType` and `StructField`.
-- Compared inferred and custom schemas.
+- Loaded the medical appointment dataset into a PySpark DataFrame.
+- Explored the inferred schema.
+- Defined a custom schema using PySpark data types.
+- Compared the inferred schema with the custom schema.
 
-### 2. Column Selection and Renaming
+### 2. Column Selection and Standardization
 
-Standardized column names using snake_case.
+- Renamed columns to lowercase snake_case.
+- Standardized column names for easier access and consistency.
+- Created an alias for the patient identifier during column selection.
 
-Examples:
-
-- `PatientId` → `patient_id`
-- `AppointmentID` → `appointment_id`
-- `ScheduledDay` → `scheduled_day`
-- `AppointmentDay` → `appointment_day`
-- `No-show` → `no_show`
-
-### 3. Data Investigation
+### 3. Data Exploration and Filtering
 
 Investigated records based on:
 
-- Negative ages.
+- Negative patient ages.
 - Patients under 18.
-- Missed appointments.
-- Missed appointments where an SMS was received.
-- Missed appointments among patients with scholarships.
-- Missed appointments among patients with hypertension and diabetes.
-- Null values in age and neighbourhood.
+- Patients who missed appointments.
+- No-shows among patients who received SMS notifications.
+- No-shows among patients with scholarship status.
+- No-shows among patients with selected health conditions.
+- Missing values in age and neighbourhood columns.
 
-### 4. Column Transformation
+### 4. Creating and Modifying Columns
 
-Created and modified columns using PySpark functions.
+Created additional fields to support analysis:
 
-Derived columns include:
+- `data_source`: Identifies the dataset source.
+- `appointment_status`: Categorizes appointments as Show or No-show.
+- `age_group`: Groups patients into age categories.
+- `no_show_flag`: Standardized no-show field.
+- `age_validation_status`: Flags unusual age values for further investigation.
 
-- `data_source` — identifies the dataset source.
-- `appointment_status` — indicates whether the patient showed up or missed the appointment.
-- `age_group` — groups patients into age ranges.
-
-Also standardized gender values to uppercase and renamed `no_show` to `no_show_flag`.
+Also standardized gender values to uppercase.
 
 ### 5. Data Type Casting and Sorting
 
-- Cast appointment dates to timestamp types.
-- Cast age to integer.
-- Ensured medical indicator columns use integer types.
-- Sorted records by age and appointment date for inspection.
+- Cast appointment dates to timestamp data types.
+- Cast age and health indicator columns to integer types.
+- Sorted records by age and appointment date.
+- Used row limits to inspect manageable samples of the dataset.
 
 ### 6. Duplicate Investigation
 
-- Investigated full-row duplicates.
+- Identified duplicate rows using all dataset columns.
 - Removed exact duplicate records.
-- Investigated duplicate `appointment_id` values.
--
+- Investigated duplicate appointment IDs.
+- Examined repeated patient IDs.
+
+Repeated patient IDs were investigated separately because one patient may have multiple appointments.
+
+### 7. Data Quality Validation
+
+#### Date Validation
+
+Investigated:
+
+- Appointments scheduled before the appointment date.
+- Missing appointment or scheduled dates.
+- Appointments occurring on the same calendar day.
+
+Date records were inspected before making cleaning decisions.
+
+#### Age Validation
+
+Investigated:
+
+- Negative ages.
+- Ages above 100.
+- Null ages.
+- Age-zero records.
+
+Created an `age_validation_status` column to classify age values as:
+
+- `valid`
+- `invalid_age`
+- `review_age`
+
+Unusual values were flagged for investigation rather than automatically removed.
+
+#### Indicator Validation
+
+Checked the following columns for values outside the expected binary range of 0 and 1:
+
+- `scholarship`
+- `hypertension`
+- `diabetes`
+- `alcoholism`
+- `handicap`
+- `sms_received`
+
+## Key Data Engineering Concepts Practiced
+
+- PySpark DataFrame operations
+- Schema definition and data type casting
+- Data profiling and exploration
+- Column standardization
+- Duplicate detection and removal
+- Date validation
+- Data quality checks
+- Conditional column creation
+- Data validation and record flagging
+- Preparing datasets for downstream analytics
+
+## Project Outcome
+
+The project demonstrates how PySpark can be used to investigate and improve the quality of a real-world dataset.
+
+Rather than automatically deleting unusual records, the pipeline emphasizes data profiling, validation, and informed cleaning decisions. This helps preserve potentially useful information while making data quality issues visible.
+
+## Future Improvements
+
+- Add automated data quality tests.
+- Build a reusable validation function for indicator columns.
+- Investigate duplicate appointment IDs and determine appropriate handling.
+- Handle invalid age and date records based on documented business rules.
+- Save the cleaned dataset in Parquet or Delta format.
+- Add logging to track pipeline execution and data quality results.
+- Schedule the pipeline using Apache Airflow.
+
+## Author
+
+**Marydoris Chidiebere**
+
+Aspiring Data Engineer | Mathematics Student | PySpark & Databricks
